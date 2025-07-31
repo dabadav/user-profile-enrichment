@@ -2,56 +2,84 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <!-- ✅ Add Knockout.js FIRST -->
   <script src="https://cdn.jsdelivr.net/npm/knockout@3.5.1/build/output/knockout-latest.js"></script>
-
-  <!-- ✅ Then SurveyJS Knockout UI -->
   <script src="https://unpkg.com/survey-knockout@1.9.102/survey.ko.min.js"></script>
   <link href="https://unpkg.com/survey-core@1.9.102/defaultV2.min.css" rel="stylesheet" />
-
   <style>
     html, body {
-      /* height: 100%; */
-      min-height: 100vh;
       margin: 0;
-      padding: 0;
-      background-color: #F3F3F3;
+      min-height: 100vh;
+      background-color: #f3f3f3;
       font-family: sans-serif;
     }
+
     #chatBox {
       max-width: 600px;
+      height: 80vh;
       margin: 2rem auto;
-      padding: 1rem;
+      display: flex;
+      flex-direction: column;
       background: white;
       border-radius: 6px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      overflow: hidden;
     }
 
-    .message {
-      margin-bottom: 1rem;
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
     }
 
-    .bot {
-      font-weight: bold;
+    .chat-input {
+      display: flex;
+      border-top: 1px solid #ccc;
     }
 
-    input[type="text"] {
-      width: 100%;
-      padding: 0.75rem;
+    .chat-input input[type="text"] {
+      flex: 1;
+      border: none;
+      padding: 1rem;
       font-size: 1rem;
-      margin-top: 0.5rem;
-      border: 1px solid #ccc;
-      border-radius: 4px;
     }
 
-    button {
-      margin-top: 1rem;
-      padding: 0.75rem 1.5rem;
+    .chat-input button {
       background-color: #0db390;
       color: white;
       border: none;
-      border-radius: 4px;
+      padding: 1rem;
       cursor: pointer;
+    }
+
+    .message {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      margin: 0.25rem 0;
+      border-radius: 16px;
+      font-size: 1rem;
+      max-width: 80%;
+      word-wrap: break-word;
+    }
+
+    .message.user {
+      background-color: #0db390;
+      color: white;
+      align-self: flex-end;
+      text-align: left;
+    }
+
+    .message.bot {
+      background-color: #e6f2f0;
+      color: black;
+      align-self: flex-start;
+      text-align: left;
+    }
+
+    .chat-input button:hover {
+      background-color: #0ca380;
     }
   </style>
 </head>
@@ -61,7 +89,6 @@
 
   <script>
     const surveyJSON = {
-      // title: "WWII Interest Survey",
       elements: [
         { type: "text", name: "age", title: "Your age:", inputType: "number" },
         {
@@ -84,7 +111,7 @@
             "Basic understanding of WWII events",
             "Moderate familiarity with key events and figures",
             "Extensive knowledge of WWII history"
-]
+          ]
         },
         {
           type: "radiogroup",
@@ -96,21 +123,92 @@
     };
 
     const survey = new Survey.Model(surveyJSON);
+    let userProfile = {};
 
     survey.onComplete.add(function(sender) {
-      const profile = sender.data;
-      document.body.innerHTML = `
-        <h2>Thanks!</h2>
-        <p><strong>Age:</strong> ${profile.age}</p>
-        <p><strong>Region:</strong> ${profile.region}</p>
-        <p><strong>Knowledge Level:</strong> ${profile.knowledge}</p>
-        <p><strong>Topics of Interest:</strong> ${profile.topics?.join(', ')}</p>
-        <p><strong>Personal Connection:</strong> ${profile.personal_connection}</p>
+      userProfile = sender.data;
+      document.body.innerHTML = '';
+
+      const container = document.createElement('div');
+      container.id = 'chatBox';
+      container.innerHTML = `
+        <div class="chat-messages" id="messages">
+          <div class="message bot">Thank you for your answers. Is there anything else you'd like to share about your interests or background?</div>
+        </div>
+        <div class="chat-input">
+          <input type="text" id="userInput" placeholder="Type your message..." />
+          <button onclick="submitEnrichment()">Send</button>
+        </div>
       `;
+
+      document.body.appendChild(container);
+
+      const finishWrapper = document.createElement('div');
+      finishWrapper.style = 'margin-top: 1rem; text-align: center;';
+      finishWrapper.innerHTML = `
+        <button onclick="finishProfile()" style="
+          background:#444;
+          color:white;
+          padding: 0.75rem 2rem;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 1rem;
+        ">Finish</button>
+      `;
+      document.body.appendChild(finishWrapper);
     });
 
     Survey.StylesManager.applyTheme("defaultV2");
     survey.render("surveyContainer");
+
+    function submitEnrichment() {
+      const input = document.getElementById("userInput");
+      const value = input.value.trim();
+      if (!value) return;
+
+      const messages = document.getElementById("messages");
+
+      // Add user message
+      const userMsg = document.createElement('div');
+      userMsg.className = 'message user';
+      userMsg.textContent = value;
+      messages.appendChild(userMsg);
+
+      input.value = '';
+      messages.scrollTop = messages.scrollHeight;
+
+      // Simulate response (or handle it later)
+      setTimeout(() => {
+        const botMsg = document.createElement('div');
+        botMsg.className = 'message bot';
+        botMsg.textContent = "Thanks for sharing. Your input helps us better understand your interests.";
+        messages.appendChild(botMsg);
+        messages.scrollTop = messages.scrollHeight;
+      }, 500);
+    }
+
+    function finishProfile() {
+      const chatInputs = Array.from(document.querySelectorAll('.message.user'))
+        .map(div => div.textContent);
+
+      document.body.innerHTML = `
+        <div style="max-width: 600px; margin: 2rem auto; font-family: sans-serif;">
+          <h2>Your Profile Summary</h2>
+          <p><strong>Age:</strong> ${userProfile.age}</p>
+          <p><strong>Region:</strong> ${userProfile.region}</p>
+          <p><strong>Knowledge:</strong> ${userProfile.knowledge}</p>
+          <p><strong>Topics:</strong> ${userProfile.topics?.join(', ')}</p>
+          <p><strong>Personal connection:</strong> ${userProfile.personal_connection}</p>
+          ${
+            chatInputs.length
+              ? `<p><strong>Extra comments:</strong> ${chatInputs.join(' | ')}</p>`
+              : ''
+          }
+        </div>
+      `;
+    }
+
   </script>
 
 </body>
