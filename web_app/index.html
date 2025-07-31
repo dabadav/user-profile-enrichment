@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <!-- ✅ Add Knockout.js FIRST -->
+  <script src="https://cdn.jsdelivr.net/npm/knockout@3.5.1/build/output/knockout-latest.js"></script>
+
+  <!-- ✅ Then SurveyJS Knockout UI -->
+  <script src="https://unpkg.com/survey-knockout@1.9.102/survey.ko.min.js"></script>
+  <link href="https://unpkg.com/survey-core@1.9.102/defaultV2.min.css" rel="stylesheet" />
+
+  <style>
+    html, body {
+      /* height: 100%; */
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+      background-color: #F3F3F3;
+      font-family: sans-serif;
+    }
+    #chatBox {
+      max-width: 600px;
+      margin: 2rem auto;
+      padding: 1rem;
+      background: white;
+      border-radius: 6px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    .message {
+      margin-bottom: 1rem;
+    }
+
+    .bot {
+      font-weight: bold;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 0.75rem;
+      font-size: 1rem;
+      margin-top: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    button {
+      margin-top: 1rem;
+      padding: 0.75rem 1.5rem;
+      background-color: #0db390;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="surveyContainer"></div>
+
+  <script>
+    const surveyJSON = {
+      // title: "WWII Interest Survey",
+      elements: [
+        { type: "text", name: "age", title: "Your age:", inputType: "number" },
+        {
+          type: "dropdown",
+          name: "region",
+          title: "Where are you from?",
+          choices: ["Europe", "North America", "Asia", "South America", "Africa", "Oceania"]
+        },
+        {
+          type: "checkbox",
+          name: "topics",
+          title: "Which topics are you looking to explore?",
+          choices: ["Holocaust", "Resistance", "Propaganda", "Trials", "Jewish life"]
+        },
+        {
+          type: "radiogroup",
+          name: "knowledge",
+          title: "How familiar are you with WWII history?",
+          choices: [
+            "Basic understanding of WWII events",
+            "Moderate familiarity with key events and figures",
+            "Extensive knowledge of WWII history"
+]
+        },
+        {
+          type: "radiogroup",
+          name: "personal_connection",
+          title: "Do you or your family have any personal connection to WWII events?",
+          choices: ["Yes", "No", "Not sure"]
+        }
+      ]
+    };
+
+    const survey = new Survey.Model(surveyJSON);
+
+    survey.onComplete.add(function(sender) {
+      const profile = sender.data;
+      document.body.innerHTML = `
+        <h2>Thanks!</h2>
+        <p><strong>Age:</strong> ${profile.age}</p>
+        <p><strong>Region:</strong> ${profile.region}</p>
+        <p><strong>Knowledge Level:</strong> ${profile.knowledge}</p>
+        <p><strong>Topics of Interest:</strong> ${profile.topics?.join(', ')}</p>
+        <p><strong>Personal Connection:</strong> ${profile.personal_connection}</p>
+      `;
+    });
+
+    Survey.StylesManager.applyTheme("defaultV2");
+    survey.render("surveyContainer");
+  </script>
+
+</body>
+</html>
