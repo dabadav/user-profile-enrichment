@@ -169,23 +169,39 @@
 
       const messages = document.getElementById("messages");
 
-      // Add user message
+      // Show user message in chat
       const userMsg = document.createElement('div');
       userMsg.className = 'message user';
       userMsg.textContent = value;
       messages.appendChild(userMsg);
-
-      input.value = '';
       messages.scrollTop = messages.scrollHeight;
 
-      // Simulate response (or handle it later)
-      setTimeout(() => {
-        const botMsg = document.createElement('div');
-        botMsg.className = 'message bot';
-        botMsg.textContent = "Thanks for sharing. Your input helps us better understand your interests.";
-        messages.appendChild(botMsg);
+      input.value = '';
+
+      // 👉 Send message to FastAPI backend
+      fetch("http://localhost:8000/enrich-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: value })
+      })
+      .then(res => res.json())
+      .then(data => {
+        const botReply = document.createElement('div');
+        botReply.className = 'message bot';
+
+        // use backend response
+        botReply.textContent = data.summary || "Thanks for your input!";
+        messages.appendChild(botReply);
         messages.scrollTop = messages.scrollHeight;
-      }, 500);
+      })
+      .catch(err => {
+        const errorMsg = document.createElement('div');
+        errorMsg.className = 'message bot';
+        errorMsg.textContent = "Sorry, something went wrong with the server.";
+        messages.appendChild(errorMsg);
+        messages.scrollTop = messages.scrollHeight;
+        console.error("Chat backend error:", err);
+      });
     }
 
     function finishProfile() {
