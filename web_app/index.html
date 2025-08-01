@@ -127,13 +127,17 @@
 
     survey.onComplete.add(function(sender) {
       userProfile = sender.data;
+
+      // Send survey data to backend
+      submitSurvey();
+
       document.body.innerHTML = '';
 
       const container = document.createElement('div');
       container.id = 'chatBox';
       container.innerHTML = `
         <div class="chat-messages" id="messages">
-          <div class="message bot">Thank you for your answers. Is there anything else you'd like to share about your interests or background?</div>
+          <div class="message bot">Is there anything else you'd like to share about your interests or background?</div>
         </div>
         <div class="chat-input">
           <input type="text" id="userInput" placeholder="Type your message..." />
@@ -162,6 +166,23 @@
     Survey.StylesManager.applyTheme("defaultV2");
     survey.render("surveyContainer");
 
+    function sendToBackend(type, payload) {
+      return fetch("http://localhost:8000/enrich-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type, payload }),
+      })
+      .then(res => {
+        if (!res.ok) {
+          // Manually throw error for non-2xx responses
+          return res.json().then(err => {
+            throw new Error(err.message || "Server error");
+          });
+        }
+        return res.json();
+      });
+    }
+
     function submitEnrichment() {
       const input = document.getElementById("userInput");
       const value = input.value.trim();
@@ -178,30 +199,25 @@
 
       input.value = '';
 
-      // 👉 Send message to FastAPI backend
-      fetch("http://localhost:8000/enrich-profile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: value })
-      })
-      .then(res => res.json())
-      .then(data => {
-        const botReply = document.createElement('div');
-        botReply.className = 'message bot';
+      // Send message to FastAPI backend
+      sendToBackend("message", { message: value })
+        .then(data => {
+          const botReply = document.createElement('div');
+          botReply.className = 'message bot';
 
-        // use backend response
-        botReply.textContent = data.summary || "Thanks for your input!";
-        messages.appendChild(botReply);
-        messages.scrollTop = messages.scrollHeight;
-      })
-      .catch(err => {
-        const errorMsg = document.createElement('div');
-        errorMsg.className = 'message bot';
-        errorMsg.textContent = "Sorry, something went wrong with the server.";
-        messages.appendChild(errorMsg);
-        messages.scrollTop = messages.scrollHeight;
-        console.error("Chat backend error:", err);
-      });
+          // Use backend response
+          botReply.textContent = data.response || "Thanks for your input!";
+          messages.appendChild(botReply);
+          messages.scrollTop = messages.scrollHeight;
+        })
+        .catch(err => {
+          const errorMsg = document.createElement('div');
+          errorMsg.className = 'message bot';
+          errorMsg.textContent = "Sorry, something went wrong with the server.";
+          messages.appendChild(errorMsg);
+          messages.scrollTop = messages.scrollHeight;
+          console.error("Chat backend error:", err);
+        });
     }
 
     function finishProfile() {
@@ -223,6 +239,15 @@
           }
         </div>
       `;
+    }
+
+    async function submitSurvey() {
+      try {
+        const response = await sendToBackend("survey", userProfile);
+        console.log("Survey data sent successfully:", response);
+      } catch (err) {
+        console.error("Error sending survey data:", err);
+      }
     }
 
   </script>
